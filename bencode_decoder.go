@@ -4,26 +4,18 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 )
 
-func decode_number(str string) string {
-	number_lenght := strings.Index(str, "e")
-	return str[1:number_lenght]
+type dictionary struct {
+	key   interface{}
+	value interface{}
 }
 
-func decode_string(str string) string {
-	str_arr := strings.Split(str, ":")
-	len_string, _ := strconv.ParseInt(str_arr[0], 10, 64)
-	final_string := str_arr[1][:len_string]
-	return final_string
-}
-
-func decode_list(str string) []string {
-	var decoded_list []string
+func decode_list(str string) []interface{} {
+	var decoded_list []interface{}
 	var l int = 0
 	for i := 0; i < len(str); {
-		if str[i] >= 'i' { // decode the i<num>e
+		if str[i] == 'i' { // decode the i<num>e
 			l = i
 			for {
 				i++
@@ -59,18 +51,47 @@ func decode_list(str string) []string {
 				}
 			}
 			i++
-		} else {
+		} else if str[i] == 'l' || str[i] == 'd' { // handling a list or dictionary inside a list
+			l, e_left := i, 0
+			for {
+				i++
+				if i >= len(str) {
+					break
+				}
+				if str[i] == 'i' {
+					e_left++
+				}
+				if str[i] == 'e' {
+					if e_left > 0 {
+						e_left--
+					} else if e_left == 0 {
+						if str[l] == 'l' {
+							decoded_list = append(decoded_list, decode_list(str[l+1:i]))
+						} else if str[i] == 'd' {
+							decoded_list = append(decoded_list, decode_dictionary(str[l+1:i]))
+						}
+						break
+					}
+				}
+			}
 			i++
+		} else {
 		}
 	}
 	return decoded_list
 }
 
-func decode_dictionary(str string) map[string]string {
-	decoded_dictionary := make(map[string]string)
-	item_list := decode_list(str)
-	for i := 0; i < len(item_list); i += 2 {
-		decoded_dictionary[item_list[i]] = item_list[i+1]
+func decode_dictionary(str string) []dictionary {
+	items_list := decode_list(str)
+	if len(items_list)%2 != 0 {
+		fmt.Printf("\x1b[1;31mAn error occured\n")
+		fmt.Printf("The dictionary does not have a key-value pair\n\x1b[1;0m")
+		os.Exit(1)
+	}
+	decoded_dictionary := make([]dictionary, len(items_list)/2)
+	for i := 0; i < len(items_list); i += 2 {
+		decoded_dictionary[i/2].key = items_list[i]
+		decoded_dictionary[i/2].value = items_list[i+1]
 	}
 	return decoded_dictionary
 }
