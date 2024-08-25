@@ -1,40 +1,54 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"crypto/sha1"
 	"fmt"
+	"io"
 	"os"
-	"strconv"
-	"strings"
 )
 
-func main() {
-	argc := len(os.Args)
-	argv := os.Args
-
-	if argc > 1 && argv[1] == "decode" {
-		//Todo: open torrent file and extract the metadata
-		torrent_data := argv[2]
-		if torrent_data[:1] == "i" {
-			decoded_number := decode_list(argv[2])
-			fmt.Printf("%s\n", decoded_number)
-		} else if _, err := strconv.Atoi(strings.Split(torrent_data, ":")[0]); err == nil {
-			decoded_string := decode_list(argv[2])
-			fmt.Printf("%s\n", decoded_string)
-		} else if torrent_data[0] == 'l' && torrent_data[len(torrent_data)-1] == 'e' {
-			decoded_list := decode_list(torrent_data[1 : len(torrent_data)-1])
-			fmt.Printf("%s\n", decoded_list)
-		} else if torrent_data[0] == 'd' && torrent_data[len(torrent_data)-1] == 'e' {
-			decoded_dictionary := decode_dictionary(torrent_data[1 : (int)(len(argv[2]))-1])
-			for i := 0; i < len(decoded_dictionary); i++ {
-				fmt.Print(decoded_dictionary[i].key)
-				fmt.Print(":")
-				fmt.Println(decoded_dictionary[i].value)
-			}
-			fmt.Printf("\n")
-		} else {
-			fmt.Printf("\x1b[1;31mAn error occured\n")
-			fmt.Printf("The provided bencode is not of proper format\n\x1b[1;0m")
-			os.Exit(1)
-		}
+func check_error(err error) {
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
+}
+
+func main() {
+	file, err := os.Open(os.Args[1])
+	check_error(err)
+	defer file.Close()
+
+	dc := byte_data{bufio.NewReader(file)}
+	decoded, err := dc.decoder()
+	check_error(err)
+
+	m, ok := decoded.(map[string]interface{})
+	if !ok {
+		fmt.Println("expected data to be a dictionary, found %T", decoded)
+		return
+	}
+
+	info, ok := m["info"].(map[string]interface{})
+	if !ok {
+		fmt.Println("expected info block to be a dictionary, found %T", m["info"])
+		return
+	}
+
+	buffer := bytes.Buffer{}
+	ec := encoded_data{&buffer}
+	err = ec.encoder(info)
+	check_error(err)
+
+	h := sha1.New()
+	io.Copy(h, &buffer)
+	sum := h.Sum(nil)
+
+	fmt.Printf("Tracker URL = %s\n", m["announce"])
+	fmt.Println("length = ", info["length"])
+	fmt.Println("Pieces length = ", info["piece length"])
+	fmt.Printf("Hash = %x\n", sum)
+	fmt.Printf("pieces hash = %x\n", info["pieces"])
 }
