@@ -51,4 +51,6 @@ func main() {
 	fmt.Println("Pieces length = ", info["piece length"])
 	fmt.Printf("Hash = %x\n", sum)
 	fmt.Printf("pieces hash = %x\n", info["pieces"])
+
+	get_peers(m, info, sum)
 }
