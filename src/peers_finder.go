@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"net"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 
 type peer_ip_port struct {
 	ip   net.IP
-	port byte
+	port uint16
 }
 
 func get_peers(torrent map[string]interface{}, info map[string]interface{}, info_hash []byte) []peer_ip_port {
@@ -61,7 +62,7 @@ func get_peers(torrent map[string]interface{}, info map[string]interface{}, info
 
 	for i := 0; i+5 < len(peer_bytes); i += 6 {
 		ip := net.IPv4(peer_bytes[i], peer_bytes[i+1], peer_bytes[i+2], peer_bytes[i+3])
-		port := (peer_bytes[i+4])<<8 + (peer_bytes[i+5])
+		port := binary.BigEndian.Uint16(peer_bytes[i+4 : i+6])
 
 		peer_data = append(peer_data, peer_ip_port{
 			ip:   ip,
@@ -69,8 +70,5 @@ func get_peers(torrent map[string]interface{}, info map[string]interface{}, info
 		})
 	}
 
-	for i := range peer_data {
-		fmt.Printf("%s::%d\n", peer_data[i].ip.String(), peer_data[i].port)
-	}
 	return peer_data
 }

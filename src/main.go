@@ -52,5 +52,22 @@ func main() {
 	fmt.Printf("Hash = %x\n", sum)
 	fmt.Printf("pieces hash = %x\n", info["pieces"])
 
-	get_peers(m, info, sum)
+	peers_data := get_peers(m, info, sum)
+	for i := range peers_data {
+		fmt.Printf("%s::%d\n", peers_data[i].ip.String(), peers_data[i].port)
+	}
+
+	conn := establish_connection(peers_data, sum)
+	out_path := os.Args[2]
+
+	data := download_piece(conn, info, 0)
+
+	out_file, err := os.Create(out_path)
+	check_error(err)
+	defer out_file.Close()
+
+	_, err = out_file.Write(data)
+	check_error(err)
+
+	fmt.Println("file downloaded")
 }
