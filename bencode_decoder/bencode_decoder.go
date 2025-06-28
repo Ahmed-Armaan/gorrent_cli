@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-func Decode(bencode string, pos int) (any, int) {
+func Decode(bencode []byte, pos int) (any, int) {
 	switch {
 	case unicode.IsDigit(rune(bencode[pos])):
 		var colonPos int
@@ -17,7 +17,7 @@ func Decode(bencode string, pos int) (any, int) {
 			}
 		}
 
-		stringSize, err := strconv.Atoi(bencode[pos : pos+colonPos])
+		stringSize, err := strconv.Atoi(string(bencode[pos : pos+colonPos]))
 		if err != nil {
 			fmt.Println("Decoding error occured")
 			return err, -1
@@ -78,13 +78,23 @@ func Decode(bencode string, pos int) (any, int) {
 			}
 
 			kvPair = append(kvPair, nextElement)
+			//if len(kvPair) == 2 {
+			//	keyStr, ok := kvPair[0].(string)
+			//	if !ok {
+			//		fmt.Println("Dictionary key is not a string")
+			//		return nil, -1
+			//	}
+			//	dictionary[keyStr] = kvPair[1]
+			//	kvPair = kvPair[:0]
+			//}
+
 			if len(kvPair) == 2 {
-				keyStr, ok := kvPair[0].(string)
+				key, ok := kvPair[0].([]byte)
 				if !ok {
 					fmt.Println("Dictionary key is not a string")
 					return nil, -1
 				}
-				dictionary[keyStr] = kvPair[1]
+				dictionary[string(key)] = kvPair[1]
 				kvPair = kvPair[:0]
 			}
 
