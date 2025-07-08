@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	//	"github.com/Ahmed-Armaan/gorrent_cli/bencode_decoder"
+	"github.com/Ahmed-Armaan/gorrent_cli/bencode_decoder"
 	"github.com/Ahmed-Armaan/gorrent_cli/utils"
 )
 
@@ -16,17 +16,22 @@ func main() {
 		return
 	}
 
-	//	decoded, _ := bencodedecoder.Decode(data, 0)
-	//	metaData, ok := decoded.(map[string]any)
-	//	if !ok {
-	//		fmt.Println("Bencode err: Invalid bencode format")
-	//		return
-	//	}
-	//	metaDataInfo, ok := metaData["info"].(map[string]any)
-	//	if !ok {
-	//		fmt.Println("Bencode err: Invalid bencode format")
-	//		return
-	//	}
+	decoded, _ := bencodedecoder.Decode(data, 0)
+	metaData, ok := decoded.(map[string]any)
+	if !ok {
+		fmt.Println("Bencode err: Invalid bencode format")
+		return
+	}
+	metaDataInfo, ok := metaData["info"].(map[string]any)
+	if !ok {
+		fmt.Println("Bencode err: Invalid bencode format")
+		return
+	}
 
-	utils.InfoHashExtractor(data)
+	hash := utils.InfoHashExtractor(data)
+	fmt.Printf("%x\n", hash)
+	piecesHash := utils.PiecesHashExtractor(metaDataInfo)
+	for i := range piecesHash {
+		fmt.Printf("%x\n", piecesHash[i])
+	}
 }
