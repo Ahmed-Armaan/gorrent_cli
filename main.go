@@ -1,0 +1,50 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/Ahmed-Armaan/gorrent_cli/bencode_decoder"
+	"github.com/Ahmed-Armaan/gorrent_cli/utils"
+)
+
+func main() {
+	input := os.Args[1]
+	data, err := os.ReadFile(input)
+	if err != nil {
+		fmt.Println("File err: File does not exist or cannot be opened")
+		return
+	}
+
+	decoded, _ := bencodedecoder.Decode(data, 0)
+	metaData, ok := decoded.(map[string]any)
+	if !ok {
+		fmt.Println("Bencode err: Invalid bencode format")
+		return
+	}
+	metaDataInfo, ok := metaData["info"].(map[string]any)
+	if !ok {
+		fmt.Println("Bencode err: Invalid bencode format")
+		return
+	}
+
+	hash := utils.InfoHashExtractor(data)
+	lenght, ok := metaDataInfo["piece length"].(int)
+	if !ok {
+		fmt.Println("Bencode err: Invalid bencode format")
+		return
+	}
+	url, ok := metaData["announce"].([]byte)
+	if !ok {
+		fmt.Println("2Bencode err: Invalid bencode format")
+		return
+	}
+	//piecesHash := utils.PiecesHashExtractor(metaDataInfo)
+
+	peers, ports, interval := utils.GetPeers(hash, lenght, string(url))
+
+	fmt.Println(interval)
+	for i := range peers {
+		fmt.Printf("%s, %s\n", ports[i], peers[i])
+	}
+}
