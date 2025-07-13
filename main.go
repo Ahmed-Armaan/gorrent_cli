@@ -29,9 +29,22 @@ func main() {
 	}
 
 	hash := utils.InfoHashExtractor(data)
-	fmt.Printf("%x\n", hash)
-	piecesHash := utils.PiecesHashExtractor(metaDataInfo)
-	for i := range piecesHash {
-		fmt.Printf("%x\n", piecesHash[i])
+	lenght, ok := metaDataInfo["piece length"].(int)
+	if !ok {
+		fmt.Println("Bencode err: Invalid bencode format")
+		return
+	}
+	url, ok := metaData["announce"].([]byte)
+	if !ok {
+		fmt.Println("2Bencode err: Invalid bencode format")
+		return
+	}
+	//piecesHash := utils.PiecesHashExtractor(metaDataInfo)
+
+	peers, ports, interval := utils.GetPeers(hash, lenght, string(url))
+
+	fmt.Println(interval)
+	for i := range peers {
+		fmt.Printf("%s, %s\n", ports[i], peers[i])
 	}
 }
