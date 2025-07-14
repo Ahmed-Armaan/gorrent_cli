@@ -13,7 +13,7 @@ import (
 )
 
 func GetPeers(infoHash [20]byte, fileLen int, announceURL string) ([]string, []string, int) {
-	peerId, err := generatePeerID()
+	myId, err := generatePeerID()
 	if err != nil {
 		fmt.Println("Error: peerId cannot be generated")
 		return nil, nil, -1
@@ -21,7 +21,7 @@ func GetPeers(infoHash [20]byte, fileLen int, announceURL string) ([]string, []s
 
 	params := url.Values{}
 	params.Add("info_hash", string(infoHash[:]))
-	params.Add("peer_id", peerId)
+	params.Add("peer_id", myId)
 	params.Add("port", "6881")
 	params.Add("uploaded", "0")
 	params.Add("downloaded", "0")
@@ -73,6 +73,8 @@ func GetPeers(infoHash [20]byte, fileLen int, announceURL string) ([]string, []s
 	if peers == nil || ports == nil {
 		return nil, nil, -1
 	}
+
+	handshake(peers, ports, infoHash[:], myId)
 	return peers, ports, interval
 }
 
@@ -107,4 +109,35 @@ func extractPeersPort(peersEntry []byte) ([]string, []string) {
 	}
 
 	return peers, ports
+}
+
+func handshake(ips []string, ports []string, infoHash []byte, myId string) {
+	ip := ips[0]
+	port := ports[0]
+	address := net.JoinHostPort(ip, port)
+
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		fmt.Println("Error: handshake could not be made")
+		return
+	}
+	defer conn.Close()
+
+	protocol_str_len := byte(19)
+	protocol_str := []byte("BitTorrent protocol")
+	reserved := make([]byte, 8)
+	handshake := append([]byte{protocol_str_len}, protocol_str...)
+	handshake = append(handshake, reserved...)
+	handshake = append(handshake, infoHash...)
+	handshake = append(handshake, myId...)
+
+	_, err = conn.Write(handshake)
+	buffer := make([]byte, 68)
+	_, err = conn.Read(buffer)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("PEER ID = %x\n", (buffer[48:]))
 }
