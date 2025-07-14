@@ -41,10 +41,17 @@ func main() {
 	}
 	//piecesHash := utils.PiecesHashExtractor(metaDataInfo)
 
-	peers, ports, interval := utils.GetPeers(hash, lenght, string(url))
+	conn := utils.GetPeers(hash, lenght, string(url))
+	downloadedPiece := utils.DownloadPiece(conn, lenght, 0)
 
-	fmt.Println(interval)
-	for i := range peers {
-		fmt.Printf("%s, %s\n", ports[i], peers[i])
+	err = os.WriteFile("piece_0.bin", downloadedPiece, 0644)
+	if err != nil {
+		fmt.Println("Failed to save file:", err)
+		return
 	}
+	fmt.Println("Piece saved to piece_0.bin")
+	//fmt.Println(interval)
+	//for i := range peers {
+	//	fmt.Printf("%s, %s\n", ports[i], peers[i])
+	//}
 }
